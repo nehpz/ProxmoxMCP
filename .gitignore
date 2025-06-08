@@ -60,3 +60,6 @@ coverage.xml
 # Local configuration
 config/config.json
 proxmox-config/config.json
+
+# MCP configuration (contains secrets)
+.mcp.json

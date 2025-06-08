@@ -96,6 +96,10 @@ class ProxmoxTool:
         error_msg = str(error)
         self.logger.error(f"Failed to {operation}: {error_msg}")
 
+        # Preserve ValueError types that are business logic validation
+        if isinstance(error, ValueError):
+            raise error
+
         if "not found" in error_msg.lower():
             raise ValueError(f"Resource not found: {error_msg}")
         if "permission denied" in error_msg.lower():
