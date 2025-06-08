@@ -14,33 +14,36 @@ The server exposes a set of tools for managing Proxmox resources including:
 - Storage management
 - Cluster status monitoring
 """
-import logging
 import os
-import sys
 import signal
-from typing import Optional, List, Annotated
+import sys
+from typing import Annotated, Optional
 
 from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.tools import Tool
-from mcp.types import TextContent as Content
 from pydantic import Field
 
 from .config.loader import load_config
 from .core.logging import setup_logging
 from .core.proxmox import ProxmoxManager
-from .tools.node import NodeTools
-from .tools.vm import VMTools
-from .tools.storage import StorageTools
 from .tools.cluster import ClusterTools
 from .tools.definitions import (
-    GET_NODES_DESC,
-    GET_NODE_STATUS_DESC,
-    GET_VMS_DESC,
+    CREATE_VM_DESC,
+    DELETE_VM_DESC,
     EXECUTE_VM_COMMAND_DESC,
-    GET_CONTAINERS_DESC,
+    GET_CLUSTER_STATUS_DESC,
+    GET_NODE_STATUS_DESC,
+    GET_NODES_DESC,
     GET_STORAGE_DESC,
-    GET_CLUSTER_STATUS_DESC
+    GET_VMS_DESC,
+    RESTART_VM_DESC,
+    SHUTDOWN_VM_DESC,
+    START_VM_DESC,
+    STOP_VM_DESC,
 )
+from .tools.node import NodeTools
+from .tools.storage import StorageTools
+from .tools.vm import VMTools
+
 
 class ProxmoxMCPServer:
     """Main server class for Proxmox MCP."""
@@ -53,34 +56,35 @@ class ProxmoxMCPServer:
         """
         self.config = load_config(config_path)
         self.logger = setup_logging(self.config.logging)
-        
+
         # Initialize core components
         self.proxmox_manager = ProxmoxManager(self.config.proxmox, self.config.auth)
         self.proxmox = self.proxmox_manager.get_api()
-        
+
         # Initialize tools
         self.node_tools = NodeTools(self.proxmox)
         self.vm_tools = VMTools(self.proxmox)
         self.storage_tools = StorageTools(self.proxmox)
         self.cluster_tools = ClusterTools(self.proxmox)
-        
+
         # Initialize MCP server
         self.mcp = FastMCP("ProxmoxMCP")
         self._setup_tools()
 
     def _setup_tools(self) -> None:
         """Register MCP tools with the server.
-        
+
         Initializes and registers all available tools with the MCP server:
         - Node management tools (list nodes, get status)
         - VM operation tools (list VMs, execute commands)
+        - VM lifecycle management (start, stop, shutdown, restart)
         - Storage management tools (list storage)
         - Cluster tools (get cluster status)
-        
+
         Each tool is registered with appropriate descriptions and parameter
         validation using Pydantic models.
         """
-        
+
         # Node tools
         @self.mcp.tool(description=GET_NODES_DESC)
         def get_nodes():
@@ -88,7 +92,12 @@ class ProxmoxMCPServer:
 
         @self.mcp.tool(description=GET_NODE_STATUS_DESC)
         def get_node_status(
-            node: Annotated[str, Field(description="Name/ID of node to query (e.g. 'pve1', 'proxmox-node2')")]
+            node: Annotated[
+                str,
+                Field(
+                    description="Name/ID of node to query (e.g. 'pve1', 'proxmox-node2')"
+                ),
+            ]
         ):
             return self.node_tools.get_node_status(node)
 
@@ -99,11 +108,76 @@ class ProxmoxMCPServer:
 
         @self.mcp.tool(description=EXECUTE_VM_COMMAND_DESC)
         async def execute_vm_command(
-            node: Annotated[str, Field(description="Host node name (e.g. 'pve1', 'proxmox-node2')")],
+            node: Annotated[
+                str, Field(description="Host node name (e.g. 'pve1', 'proxmox-node2')")
+            ],
             vmid: Annotated[str, Field(description="VM ID number (e.g. '100', '101')")],
-            command: Annotated[str, Field(description="Shell command to run (e.g. 'uname -a', 'systemctl status nginx')")]
+            command: Annotated[
+                str,
+                Field(
+                    description="Shell command to run (e.g. 'uname -a', 'systemctl status nginx')"
+                ),
+            ],
         ):
             return await self.vm_tools.execute_command(node, vmid, command)
+
+        # VM lifecycle tools
+        @self.mcp.tool(description=START_VM_DESC)
+        async def start_vm(
+            node: Annotated[
+                str, Field(description="Host node name (e.g. 'pve1', 'proxmox-node2')")
+            ],
+            vmid: Annotated[str, Field(description="VM ID number (e.g. '100', '101')")],
+        ):
+            return await self.vm_tools.start_vm(node, vmid)
+
+        @self.mcp.tool(description=STOP_VM_DESC)
+        async def stop_vm(
+            node: Annotated[
+                str, Field(description="Host node name (e.g. 'pve1', 'proxmox-node2')")
+            ],
+            vmid: Annotated[str, Field(description="VM ID number (e.g. '100', '101')")],
+        ):
+            return await self.vm_tools.stop_vm(node, vmid)
+
+        @self.mcp.tool(description=SHUTDOWN_VM_DESC)
+        async def shutdown_vm(
+            node: Annotated[
+                str, Field(description="Host node name (e.g. 'pve1', 'proxmox-node2')")
+            ],
+            vmid: Annotated[str, Field(description="VM ID number (e.g. '100', '101')")],
+        ):
+            return await self.vm_tools.shutdown_vm(node, vmid)
+
+        @self.mcp.tool(description=RESTART_VM_DESC)
+        async def restart_vm(
+            node: Annotated[
+                str, Field(description="Host node name (e.g. 'pve1', 'proxmox-node2')")
+            ],
+            vmid: Annotated[str, Field(description="VM ID number (e.g. '100', '101')")],
+        ):
+            return await self.vm_tools.restart_vm(node, vmid)
+
+        @self.mcp.tool(description=CREATE_VM_DESC)
+        async def create_vm(
+            node: Annotated[
+                str, Field(description="Host node name (e.g. 'pve1', 'proxmox-node2')")
+            ],
+            vmid: Annotated[str, Field(description="VM ID number (e.g. '100', '101')")],
+            name: Annotated[str, Field(description="VM name (e.g. 'test-vm')")],
+            memory: Annotated[int, Field(description="Memory in MB (default: 512)")] = 512,
+            cores: Annotated[int, Field(description="CPU cores (default: 1)")] = 1,
+        ):
+            return await self.vm_tools.create_vm(node, vmid, name, memory, cores)
+
+        @self.mcp.tool(description=DELETE_VM_DESC)
+        async def delete_vm(
+            node: Annotated[
+                str, Field(description="Host node name (e.g. 'pve1', 'proxmox-node2')")
+            ],
+            vmid: Annotated[str, Field(description="VM ID number (e.g. '100', '101')")],
+        ):
+            return await self.vm_tools.delete_vm(node, vmid)
 
         # Storage tools
         @self.mcp.tool(description=GET_STORAGE_DESC)
@@ -117,12 +191,12 @@ class ProxmoxMCPServer:
 
     def start(self) -> None:
         """Start the MCP server.
-        
+
         Initializes the server with:
         - Signal handlers for graceful shutdown (SIGINT, SIGTERM)
         - Async runtime for handling concurrent requests
         - Error handling and logging
-        
+
         The server runs until terminated by a signal or fatal error.
         """
         import anyio
@@ -142,12 +216,13 @@ class ProxmoxMCPServer:
             self.logger.error(f"Server error: {e}")
             sys.exit(1)
 
+
 if __name__ == "__main__":
     config_path = os.getenv("PROXMOX_MCP_CONFIG")
     if not config_path:
         print("PROXMOX_MCP_CONFIG environment variable must be set")
         sys.exit(1)
-    
+
     try:
         server = ProxmoxMCPServer(config_path)
         server.start()
