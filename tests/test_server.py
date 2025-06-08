@@ -19,7 +19,8 @@ def mock_env_vars():
         "PROXMOX_USER": "test@pve",
         "PROXMOX_TOKEN_NAME": "test_token",
         "PROXMOX_TOKEN_VALUE": "test_value",
-        "LOG_LEVEL": "DEBUG"
+        "LOG_LEVEL": "DEBUG",
+        "PROXMOX_MCP_CONFIG": "/tmp/test_config.json"
     }
     with patch.dict(os.environ, env_vars):
         yield env_vars
@@ -27,7 +28,7 @@ def mock_env_vars():
 @pytest.fixture
 def mock_proxmox():
     """Fixture to mock ProxmoxAPI."""
-    with patch("proxmox_mcp.server.ProxmoxAPI") as mock:
+    with patch("proxmox_mcp.core.proxmox.ProxmoxAPI") as mock:
         mock.return_value.nodes.get.return_value = [
             {"node": "node1", "status": "online"},
             {"node": "node2", "status": "online"}
@@ -37,7 +38,26 @@ def mock_proxmox():
 @pytest.fixture
 def server(mock_env_vars, mock_proxmox):
     """Fixture to create a ProxmoxMCPServer instance."""
-    return ProxmoxMCPServer()
+    from proxmox_mcp.config.models import Config, ProxmoxConfig, AuthConfig, LoggingConfig
+    
+    mock_config = Config(
+        proxmox=ProxmoxConfig(
+            host="test.proxmox.com",
+            port=8006,
+            verify_ssl=False
+        ),
+        auth=AuthConfig(
+            user="test@pve",
+            token_name="test_token",
+            token_value="test_value"
+        ),
+        logging=LoggingConfig(
+            level="DEBUG"
+        )
+    )
+    
+    with patch("proxmox_mcp.server.load_config", return_value=mock_config):
+        return ProxmoxMCPServer()
 
 def test_server_initialization(server, mock_proxmox):
     """Test server initialization with environment variables."""
