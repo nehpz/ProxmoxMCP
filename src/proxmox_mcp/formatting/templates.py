@@ -180,7 +180,8 @@ class ProxmoxTemplates:
                 f"  • Node: {container['node']}",
                 f"  • CPU Cores: {container.get('cpus', 'N/A')}",
                 f"  • Memory: {ProxmoxFormatters.format_bytes(memory_used)} / "
-                f"{ProxmoxFormatters.format_bytes(memory_total)} ({memory_percent:.1f}%)"
+                f"{ProxmoxFormatters.format_bytes(memory_total)} ({memory_percent:.1f}%)",
+                f"  • Template: {container.get('template', 'N/A')}"
             ])
             
         return "\n".join(result)

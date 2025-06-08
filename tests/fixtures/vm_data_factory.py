@@ -240,3 +240,104 @@ class ProxmoxAPIResponseFactory:
             "sockets": 1,
             "vmgenid": "12345678-1234-1234-1234-123456789012",
         }
+
+
+class ContainerTestDataFactory:
+    """Factory for creating container test data with configurable parameters.
+    
+    Follows Open/Closed Principle - can be extended for new scenarios
+    without modifying existing factory methods.
+    """
+
+    @staticmethod
+    def create_container_list_response(node: str = "node1") -> list:
+        """Create a container list response for a specific node.
+        
+        Args:
+            node: Node name (default: "node1")
+            
+        Returns:
+            List of container configurations
+        """
+        return [
+            {
+                "vmid": "200",
+                "name": "web-container",
+                "status": "running",
+                "mem": 268435456,  # 256MB in bytes
+                "maxmem": 536870912,  # 512MB in bytes
+                "type": "lxc",
+                "node": node,
+            },
+            {
+                "vmid": "201", 
+                "name": "db-container",
+                "status": "stopped",
+                "mem": 0,
+                "maxmem": 1073741824,  # 1GB in bytes
+                "type": "lxc",
+                "node": node,
+            }
+        ]
+
+    @staticmethod
+    def create_container_config_response(
+        vmid: str = "200", 
+        cores: int = 2,
+        template: str = "ubuntu-20.04",
+        **overrides: Any
+    ) -> Dict[str, Any]:
+        """Create container configuration response.
+        
+        Args:
+            vmid: Container ID (default: "200")
+            cores: CPU cores (default: 2)
+            template: Container template (default: "ubuntu-20.04")
+            **overrides: Additional config fields
+            
+        Returns:
+            Dict containing container configuration
+        """
+        config = {
+            "cores": cores,
+            "memory": 512,
+            "rootfs": "local-lvm:vm-200-disk-0,size=8G",
+            "template": template,
+            "ostype": "ubuntu",
+            "arch": "amd64",
+        }
+        config.update(overrides)
+        return config
+
+    @staticmethod
+    def create_single_node_response(node: str = "node1") -> list:
+        """Create single node response for testing.
+        
+        Args:
+            node: Node name (default: "node1")
+            
+        Returns:
+            List containing single node
+        """
+        return [{"node": node, "status": "online", "type": "node"}]
+
+    @staticmethod
+    def create_multi_node_response() -> list:
+        """Create multi-node response for testing.
+        
+        Returns:
+            List containing multiple nodes
+        """
+        return [
+            {"node": "node1", "status": "online", "type": "node"},
+            {"node": "node2", "status": "online", "type": "node"},
+        ]
+
+    @staticmethod
+    def create_empty_container_response() -> list:
+        """Create empty container list response.
+        
+        Returns:
+            Empty list
+        """
+        return []

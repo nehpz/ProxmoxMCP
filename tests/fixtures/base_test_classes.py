@@ -8,8 +8,8 @@ import pytest
 from unittest.mock import Mock
 from typing import Dict, Any
 
-from .mock_helpers import ProxmoxAPIMockBuilder, VMToolsMockHelper, AssertionHelper
-from .vm_data_factory import VMTestDataFactory
+from .mock_helpers import ProxmoxAPIMockBuilder, VMToolsMockHelper, ContainerToolsMockHelper, AssertionHelper
+from .vm_data_factory import VMTestDataFactory, ContainerTestDataFactory
 
 
 class BaseVMOperationTest:
@@ -295,3 +295,149 @@ class BaseVMErrorTest(BaseVMOperationTest):
             pytest.raises context manager
         """
         return pytest.raises(RuntimeError, match=expected_message)
+
+
+class BaseContainerOperationTest:
+    """Base class for container operation tests.
+    
+    Follows Open/Closed Principle - can be extended for specific operations
+    without modifying this base class. Provides common setup and utilities.
+    """
+
+    def setup_method(self):
+        """Set up test method with fresh mocks.
+        
+        Each test gets a clean mock environment (test isolation).
+        """
+        self.mock_builder = ProxmoxAPIMockBuilder()
+        self.assertion_helper = AssertionHelper()
+        self.data_factory = ContainerTestDataFactory()
+
+    def create_container_tools_with_mock(self, mock_proxmox: Mock):
+        """Create ContainerTools instance with mock dependency injection.
+        
+        Args:
+            mock_proxmox: Mock ProxmoxAPI instance
+            
+        Returns:
+            ContainerTools instance with injected mock
+        """
+        return ContainerToolsMockHelper.create_container_tools_with_mock(mock_proxmox)
+
+    def get_default_test_params(self) -> Dict[str, str]:
+        """Get default test parameters for container operations.
+        
+        Returns:
+            Dict with default node and container ID
+        """
+        return {
+            "node": "node1", 
+            "vmid": "200"
+        }
+
+
+class BaseContainerListTest(BaseContainerOperationTest):
+    """Base class for container listing operations.
+    
+    Extends base class with listing-specific functionality.
+    Demonstrates inheritance following Liskov Substitution Principle.
+    """
+
+    def setup_single_node_with_containers(self, **overrides) -> Mock:
+        """Set up mock for single node with containers scenario.
+        
+        Args:
+            **overrides: Override default configuration
+            
+        Returns:
+            Configured mock ProxmoxAPI
+        """
+        node = overrides.pop("node", "node1")
+        containers = overrides.pop("containers", None)
+        return (self.mock_builder
+                .with_container_nodes()
+                .with_container_list(containers, node)
+                .with_container_config()
+                .build())
+
+    def setup_multi_node_containers(self, **overrides) -> Mock:
+        """Set up mock for multi-node container scenario.
+        
+        Args:
+            **overrides: Override default configuration
+            
+        Returns:
+            Configured mock ProxmoxAPI
+        """
+        return (self.mock_builder
+                .with_multi_node_containers()
+                .with_container_config()
+                .build())
+
+    def setup_empty_container_list(self, **overrides) -> Mock:
+        """Set up mock for empty container list scenario.
+        
+        Args:
+            **overrides: Override default configuration
+            
+        Returns:
+            Configured mock ProxmoxAPI
+        """
+        return (self.mock_builder
+                .with_container_nodes()
+                .with_empty_container_list()
+                .build())
+
+    def setup_config_fallback_scenario(self, **overrides) -> Mock:
+        """Set up mock for config fallback scenario.
+        
+        Args:
+            **overrides: Override default configuration
+            
+        Returns:
+            Configured mock ProxmoxAPI
+        """
+        return (self.mock_builder
+                .with_container_nodes()
+                .with_container_list()
+                .with_container_config_error()
+                .build())
+
+    def assert_container_list_response_format(self, response: list):
+        """Assert container list response has correct format.
+        
+        Args:
+            response: Response from container operation
+        """
+        assert len(response) == 1, "Expected single response content"
+        assert hasattr(response[0], 'text'), "Expected response with text content"
+        assert isinstance(response[0].text, str), "Expected text content as string"
+
+    def assert_container_data_present(self, response: list, expected_count: int = None):
+        """Assert container data is present in response.
+        
+        Args:
+            response: Response from container operation
+            expected_count: Expected number of containers (optional)
+        """
+        self.assert_container_list_response_format(response)
+        
+        response_text = response[0].text
+        assert "📦" in response_text, "Expected container emoji in formatted response"
+        
+        if expected_count is not None:
+            # Count occurrences of container entries
+            container_count = response_text.count("📦") - 1  # Subtract 1 for header
+            assert container_count == expected_count, f"Expected {expected_count} containers, found {container_count}"
+
+    def assert_no_containers_response(self, response: list):
+        """Assert response indicates no containers found.
+        
+        Args:
+            response: Response from container operation
+        """
+        self.assert_container_list_response_format(response)
+        response_text = response[0].text
+        # Should have header but no individual container entries
+        container_count = response_text.count("📦")
+        assert container_count <= 1, "Expected no container entries (header only)"

@@ -228,11 +228,16 @@ async def test_execute_vm_command_with_error(server, mock_proxmox):
     mock_proxmox.return_value.nodes.return_value.qemu.return_value.status.current.get.return_value = {
         "status": "running"
     }
+    
     # Mock command execution with error
     mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.exec.post.return_value = {
-        "out": "",
-        "err": "command not found",
-        "exitcode": 1
+        "pid": "12345"
+    }
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.get.return_value = {
+        "out-data": "",
+        "err-data": "command not found", 
+        "exitcode": 1,
+        "exited": 1
     }
 
     response = await server.mcp.call_tool("execute_vm_command", {
@@ -240,9 +245,10 @@ async def test_execute_vm_command_with_error(server, mock_proxmox):
         "vmid": "100",
         "command": "invalid-command"
     })
-    result = json.loads(response[0].text)
+    result_text = response[0].text
 
-    assert result["success"] is True  # API call succeeded
-    assert result["output"] == ""
-    assert result["error"] == "command not found"
-    assert result["exit_code"] == 1
+    # Verify the response is formatted text, not JSON
+    assert "🔧 Console Command Result" in result_text
+    assert "Status: SUCCESS" in result_text  # API call succeeded
+    assert "Command: invalid-command" in result_text
+    assert "Error:\ncommand not found" in result_text

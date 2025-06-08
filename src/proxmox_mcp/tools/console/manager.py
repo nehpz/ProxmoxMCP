@@ -106,7 +106,7 @@ class VMConsoleManager:
                 self.logger.info("Starting command execution...")
                 try:
                     self.logger.debug(f"Executing command via agent: {command}")
-                    exec_result = endpoint("exec").post(command=command)
+                    exec_result = endpoint.exec.post(command=command)
                     self.logger.debug(f"Raw exec response: {exec_result}")
                     self.logger.info(f"Command started with result: {exec_result}")
                 except Exception as e:

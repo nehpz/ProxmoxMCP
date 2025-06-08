@@ -6,7 +6,7 @@ needed for specific tests (Interface Segregation Principle).
 """
 from unittest.mock import Mock, MagicMock
 from typing import Dict, Any, Optional, Union
-from .vm_data_factory import VMTestDataFactory, ProxmoxAPIResponseFactory
+from .vm_data_factory import VMTestDataFactory, ProxmoxAPIResponseFactory, ContainerTestDataFactory
 
 
 class ProxmoxAPIMockBuilder:
@@ -23,11 +23,13 @@ class ProxmoxAPIMockBuilder:
 
     def _configure_base_structure(self) -> None:
         """Configure the basic ProxmoxAPI mock structure."""
-        # Create the chained method structure
+        # Create the chained method structure for VMs and containers
         self.mock.nodes = Mock()
         self.mock.nodes.return_value = Mock()
         self.mock.nodes.return_value.qemu = Mock()
         self.mock.nodes.return_value.qemu.return_value = Mock()
+        self.mock.nodes.return_value.lxc = Mock()
+        self.mock.nodes.return_value.lxc.return_value = Mock()
 
     def with_vm_status(
         self, 
@@ -167,6 +169,90 @@ class ProxmoxAPIMockBuilder:
         
         return self
 
+    def with_container_nodes(self, nodes: list = None) -> "ProxmoxAPIMockBuilder":
+        """Configure mock to return specific nodes for container listing.
+        
+        Args:
+            nodes: List of nodes (optional, uses default if None)
+            
+        Returns:
+            Self for method chaining
+        """
+        if nodes is None:
+            nodes = ContainerTestDataFactory.create_single_node_response()
+        self.mock.nodes.get.return_value = nodes
+        return self
+
+    def with_container_list(self, containers: list = None, node: str = "node1") -> "ProxmoxAPIMockBuilder":
+        """Configure mock to return specific container list for a node.
+        
+        Args:
+            containers: List of containers (optional, uses default if None)
+            node: Node name (default: "node1")
+            
+        Returns:
+            Self for method chaining
+        """
+        if containers is None:
+            containers = ContainerTestDataFactory.create_container_list_response(node)
+        self.mock.nodes.return_value.lxc.get.return_value = containers
+        return self
+
+    def with_container_config(self, vmid: str = "200", config: Dict[str, Any] = None) -> "ProxmoxAPIMockBuilder":
+        """Configure mock to return specific container configuration.
+        
+        Args:
+            vmid: Container ID (default: "200")
+            config: Container config (optional, uses default if None)
+            
+        Returns:
+            Self for method chaining
+        """
+        if config is None:
+            config = ContainerTestDataFactory.create_container_config_response(vmid)
+        self.mock.nodes.return_value.lxc.return_value.config.get.return_value = config
+        return self
+
+    def with_container_config_error(self, error_message: str = "Config access failed") -> "ProxmoxAPIMockBuilder":
+        """Configure mock to raise error when accessing container config.
+        
+        Args:
+            error_message: Error message to raise
+            
+        Returns:
+            Self for method chaining
+        """
+        error = Exception(error_message)
+        self.mock.nodes.return_value.lxc.return_value.config.get.side_effect = error
+        return self
+
+    def with_empty_container_list(self) -> "ProxmoxAPIMockBuilder":
+        """Configure mock to return empty container list.
+        
+        Returns:
+            Self for method chaining
+        """
+        empty_list = ContainerTestDataFactory.create_empty_container_response()
+        self.mock.nodes.return_value.lxc.get.return_value = empty_list
+        return self
+
+    def with_multi_node_containers(self) -> "ProxmoxAPIMockBuilder":
+        """Configure mock for multi-node container scenario.
+        
+        Returns:
+            Self for method chaining
+        """
+        nodes = ContainerTestDataFactory.create_multi_node_response()
+        self.mock.nodes.get.return_value = nodes
+        
+        # Configure different container lists for different nodes
+        def get_containers_for_node(*args, **kwargs):
+            # Return different containers based on which node is being accessed
+            return ContainerTestDataFactory.create_container_list_response(args[0] if args else "node1")
+        
+        self.mock.nodes.return_value.lxc.get.side_effect = get_containers_for_node
+        return self
+
     def build(self) -> Mock:
         """Build and return the configured mock.
         
@@ -221,6 +307,51 @@ class VMToolsMockHelper:
             builder.with_vm_not_found_error().with_create_operation()
         elif operation == "delete":
             builder.with_vm_status("stopped").with_delete_operation()
+        
+        return builder.build()
+
+
+class ContainerToolsMockHelper:
+    """Helper for creating ContainerTools instances with mocked dependencies.
+    
+    Follows Dependency Inversion Principle by injecting mock dependencies.
+    """
+
+    @staticmethod
+    def create_container_tools_with_mock(mock_proxmox: Mock):
+        """Create ContainerTools instance with injected mock.
+        
+        Args:
+            mock_proxmox: Mock ProxmoxAPI instance
+            
+        Returns:
+            ContainerTools instance with mock dependency
+        """
+        from proxmox_mcp.tools.container import ContainerTools
+        return ContainerTools(mock_proxmox)
+
+    @staticmethod
+    def create_minimal_mock_for_container_operation(scenario: str, **kwargs) -> Mock:
+        """Create minimal mock for specific container operation (ISP compliance).
+        
+        Args:
+            scenario: Test scenario name
+            **kwargs: Scenario-specific parameters
+            
+        Returns:
+            Minimal mock configured for the specific scenario
+        """
+        builder = ProxmoxAPIMockBuilder()
+        
+        # Configure based on scenario
+        if scenario == "single_node_with_containers":
+            builder.with_container_nodes().with_container_list().with_container_config()
+        elif scenario == "multi_node_containers":
+            builder.with_multi_node_containers()
+        elif scenario == "empty_containers":
+            builder.with_container_nodes().with_empty_container_list()
+        elif scenario == "config_fallback":
+            builder.with_container_nodes().with_container_list().with_container_config_error()
         
         return builder.build()
 
