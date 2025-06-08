@@ -31,6 +31,7 @@ from .tools.definitions import (
     DELETE_VM_DESC,
     EXECUTE_VM_COMMAND_DESC,
     GET_CLUSTER_STATUS_DESC,
+    GET_CONTAINERS_DESC,
     GET_NODE_STATUS_DESC,
     GET_NODES_DESC,
     GET_STORAGE_DESC,
@@ -40,6 +41,7 @@ from .tools.definitions import (
     START_VM_DESC,
     STOP_VM_DESC,
 )
+from .tools.container import ContainerTools
 from .tools.node import NodeTools
 from .tools.storage import StorageTools
 from .tools.vm import VMTools
@@ -64,6 +66,7 @@ class ProxmoxMCPServer:
         # Initialize tools
         self.node_tools = NodeTools(self.proxmox)
         self.vm_tools = VMTools(self.proxmox)
+        self.container_tools = ContainerTools(self.proxmox)
         self.storage_tools = StorageTools(self.proxmox)
         self.cluster_tools = ClusterTools(self.proxmox)
 
@@ -178,6 +181,11 @@ class ProxmoxMCPServer:
             vmid: Annotated[str, Field(description="VM ID number (e.g. '100', '101')")],
         ):
             return await self.vm_tools.delete_vm(node, vmid)
+
+        # Container tools
+        @self.mcp.tool(description=GET_CONTAINERS_DESC)
+        def get_containers():
+            return self.container_tools.get_containers()
 
         # Storage tools
         @self.mcp.tool(description=GET_STORAGE_DESC)
