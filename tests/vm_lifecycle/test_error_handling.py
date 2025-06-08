@@ -12,7 +12,7 @@ These tests ensure robust error handling across all VM operations.
 import pytest
 import json
 from unittest.mock import Mock, patch
-from proxmoxer.core import ProxmoxHTTPError
+from proxmoxer import ResourceException
 
 from tests.fixtures.base_test_classes import BaseVMErrorTest
 
@@ -29,7 +29,7 @@ class TestVMOperationNetworkErrors(BaseVMErrorTest):
         # Arrange
         mock_proxmox = Mock()
         mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = \
-            ProxmoxHTTPError("Connection timeout", status_code=408)
+            ResourceException("Connection timeout")
         
         vm_tools = self.create_vm_tools_with_mock(mock_proxmox)
         params = self.get_default_test_params()
@@ -53,7 +53,7 @@ class TestVMOperationNetworkErrors(BaseVMErrorTest):
         # Arrange
         mock_proxmox = Mock()
         mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = \
-            ProxmoxHTTPError("Network is unreachable", status_code=503)
+            ResourceException("Network is unreachable")
         
         vm_tools = self.create_vm_tools_with_mock(mock_proxmox)
         params = self.get_default_test_params()
@@ -68,7 +68,7 @@ class TestVMOperationNetworkErrors(BaseVMErrorTest):
         # Arrange
         mock_proxmox = Mock()
         mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = \
-            ProxmoxHTTPError("Authentication failed", status_code=401)
+            ResourceException("Authentication failed")
         
         vm_tools = self.create_vm_tools_with_mock(mock_proxmox)
         params = self.get_default_test_params()
@@ -83,7 +83,7 @@ class TestVMOperationNetworkErrors(BaseVMErrorTest):
         # Arrange
         mock_proxmox = Mock()
         mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = \
-            ProxmoxHTTPError("Permission denied", status_code=403)
+            ResourceException("Permission denied")
         
         vm_tools = self.create_vm_tools_with_mock(mock_proxmox)
         params = self.get_default_test_params()
@@ -230,7 +230,7 @@ class TestVMOperationInputValidation(BaseVMErrorTest):
         # Arrange
         mock_proxmox = Mock()
         mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = \
-            ProxmoxHTTPError("Node 'invalid-node' does not exist", status_code=400)
+            ResourceException("Node 'invalid-node' does not exist")
         
         vm_tools = self.create_vm_tools_with_mock(mock_proxmox)
         invalid_nodes = ["", "invalid-node", "node with spaces", "node@special"]
@@ -246,7 +246,7 @@ class TestVMOperationInputValidation(BaseVMErrorTest):
         # Arrange
         mock_proxmox = Mock()
         mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = \
-            ProxmoxHTTPError("Invalid VM ID format", status_code=400)
+            ResourceException("Invalid VM ID format")
         
         vm_tools = self.create_vm_tools_with_mock(mock_proxmox)
         invalid_vmids = ["", "abc", "vm100", "100.5", "-100"]
@@ -262,9 +262,9 @@ class TestVMOperationInputValidation(BaseVMErrorTest):
         # Arrange
         mock_proxmox = Mock()
         mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = \
-            ProxmoxHTTPError("VM not found", status_code=404)  # VM doesn't exist, good for create
+            ResourceException("VM not found")  # VM doesn't exist, good for create
         mock_proxmox.nodes.return_value.qemu.post.side_effect = \
-            ProxmoxHTTPError("Invalid memory value", status_code=400)
+            ResourceException("Invalid memory value")
         
         vm_tools = self.create_vm_tools_with_mock(mock_proxmox)
         params = self.get_default_test_params()
@@ -287,9 +287,9 @@ class TestVMOperationInputValidation(BaseVMErrorTest):
         # Arrange
         mock_proxmox = Mock()
         mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = \
-            ProxmoxHTTPError("VM not found", status_code=404)  # VM doesn't exist, good for create
+            ResourceException("VM not found")  # VM doesn't exist, good for create
         mock_proxmox.nodes.return_value.qemu.post.side_effect = \
-            ProxmoxHTTPError("Invalid CPU cores value", status_code=400)
+            ResourceException("Invalid CPU cores value")
         
         vm_tools = self.create_vm_tools_with_mock(mock_proxmox)
         params = self.get_default_test_params()
@@ -319,7 +319,7 @@ class TestVMOperationStateConsistency(BaseVMErrorTest):
         # Arrange
         mock_proxmox = Mock()
         mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = \
-            ProxmoxHTTPError("VM state is corrupted", status_code=500)
+            ResourceException("VM state is corrupted")
         
         vm_tools = self.create_vm_tools_with_mock(mock_proxmox)
         params = self.get_default_test_params()
@@ -419,11 +419,11 @@ class TestVMOperationRecoveryMechanisms(BaseVMErrorTest):
             if call_count == 1:
                 return {"status": "stopped"}  # First call succeeds
             else:
-                raise ProxmoxHTTPError("Operation failed partially", status_code=500)
+                raise ResourceException("Operation failed partially")
         
         mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = side_effect
         mock_proxmox.nodes.return_value.qemu.return_value.status.start.post.side_effect = \
-            ProxmoxHTTPError("Start operation failed", status_code=500)
+            ResourceException("Start operation failed")
         
         vm_tools = self.create_vm_tools_with_mock(mock_proxmox)
         params = self.get_default_test_params()
