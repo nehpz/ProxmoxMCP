@@ -451,8 +451,8 @@ class VMTools(ProxmoxTool):
             # Check current VM status
             try:
                 vm_status = self.proxmox.nodes(node).qemu(vmid).status.current.get()
-                if vm_status["status"] == "running":
-                    raise ValueError(f"VM {vmid} is still running - stop it first")
+                if vm_status["status"] in ["running", "paused"]:
+                    raise ValueError(f"VM {vmid} must be stopped before deletion")
             except Exception as e:
                 if "not found" not in str(e).lower():
                     raise
