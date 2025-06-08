@@ -67,8 +67,9 @@ class BaseVMStartStopTest(BaseVMOperationTest):
         Returns:
             Configured mock ProxmoxAPI
         """
+        status = overrides.pop("status", "stopped")
         return (self.mock_builder
-                .with_vm_status("stopped", **overrides)
+                .with_vm_status(status=status, **overrides)
                 .with_start_operation()
                 .build())
 
@@ -81,8 +82,9 @@ class BaseVMStartStopTest(BaseVMOperationTest):
         Returns:
             Configured mock ProxmoxAPI
         """
+        status = overrides.pop("status", "running")
         return (self.mock_builder
-                .with_vm_status("running", **overrides)
+                .with_vm_status(status=status, **overrides)
                 .with_stop_operation()
                 .build())
 
@@ -136,8 +138,9 @@ class BaseVMLifecycleTest(BaseVMOperationTest):
         Returns:
             Configured mock ProxmoxAPI
         """
+        status = overrides.pop("status", "stopped")
         return (self.mock_builder
-                .with_vm_status("stopped", **overrides)
+                .with_vm_status(status=status, **overrides)
                 .with_delete_operation()
                 .build())
 
@@ -178,8 +181,9 @@ class BaseVMStateChangeTest(BaseVMOperationTest):
         Returns:
             Configured mock ProxmoxAPI
         """
+        status = overrides.pop("status", "running")
         return (self.mock_builder
-                .with_vm_status("running", **overrides)
+                .with_vm_status(status=status, **overrides)
                 .with_shutdown_operation()
                 .build())
 
@@ -192,8 +196,9 @@ class BaseVMStateChangeTest(BaseVMOperationTest):
         Returns:
             Configured mock ProxmoxAPI
         """
+        status = overrides.pop("status", "running")
         return (self.mock_builder
-                .with_vm_status("running", **overrides)
+                .with_vm_status(status=status, **overrides)
                 .with_restart_operation()
                 .build())
 

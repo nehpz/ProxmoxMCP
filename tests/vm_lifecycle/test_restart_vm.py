@@ -12,7 +12,7 @@ import pytest
 import json
 from unittest.mock import Mock
 
-from fixtures.base_test_classes import BaseVMStateChangeTest
+from tests.fixtures.base_test_classes import BaseVMStateChangeTest
 
 
 class TestRestartVMSuccess(BaseVMStateChangeTest):

@@ -12,7 +12,7 @@ import pytest
 import json
 from unittest.mock import Mock
 
-from fixtures.base_test_classes import BaseVMStartStopTest
+from tests.fixtures.base_test_classes import BaseVMStartStopTest, BaseVMErrorTest
 
 
 class TestStartVMSuccess(BaseVMStartStopTest):
@@ -116,7 +116,7 @@ class TestStartVMSuccess(BaseVMStartStopTest):
         self.assertion_helper.assert_api_call_made(mock_proxmox, "start", "node1", custom_vmid)
 
 
-class TestStartVMErrors(BaseVMStartStopTest):
+class TestStartVMErrors(BaseVMErrorTest):
     """Test VM start error scenarios.
     
     Follows SRP - only tests error conditions.

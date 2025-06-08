@@ -14,7 +14,7 @@ import json
 from unittest.mock import Mock, patch
 from proxmoxer.core import ProxmoxHTTPError
 
-from fixtures.base_test_classes import BaseVMErrorTest
+from tests.fixtures.base_test_classes import BaseVMErrorTest
 
 
 class TestVMOperationNetworkErrors(BaseVMErrorTest):

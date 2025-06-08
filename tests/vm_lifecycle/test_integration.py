@@ -15,7 +15,7 @@ import pytest
 import json
 from unittest.mock import Mock
 
-from fixtures.base_test_classes import BaseVMOperationTest
+from tests.fixtures.base_test_classes import BaseVMOperationTest
 
 
 class TestVMLifecycleComplete(BaseVMOperationTest):

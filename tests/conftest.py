@@ -7,8 +7,8 @@ across different test modules.
 import pytest
 from unittest.mock import Mock
 
-from fixtures.mock_helpers import ProxmoxAPIMockBuilder, VMToolsMockHelper
-from fixtures.vm_data_factory import VMTestDataFactory
+from tests.fixtures.mock_helpers import ProxmoxAPIMockBuilder, VMToolsMockHelper
+from tests.fixtures.vm_data_factory import VMTestDataFactory
 
 
 @pytest.fixture
