@@ -1,0 +1,5 @@
+# Dev environment setup
+devCommand: uv venv .venv && source .venv/bin/activate && uv sync --all-extras && cp /Users/stephen/Projects/MCP/ProxmoxMCP/proxmox-config/config.json proxmox-config/ && exec bash
+
+# Port range for any potential web services or debugging
+portRange: 3050-3060

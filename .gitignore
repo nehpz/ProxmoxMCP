@@ -23,9 +23,14 @@ wheels/
 # Virtual Environment
 .env
 .venv
+.uv/
 env/
 venv/
 ENV/
+
+#Cache
+.mypy_cache
+.ruff_cache
 
 # IDE
 .idea/
@@ -54,12 +59,13 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# UV
-.uv/
+#Logs
+logs
+proxmox_mcp.log
 
 # Local configuration
 config/config.json
 proxmox-config/config.json
 
 # MCP configuration (contains secrets)
-.mcp.json
+# .mcp.json

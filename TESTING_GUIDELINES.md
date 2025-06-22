@@ -5,24 +5,28 @@ This document outlines the testing standards and expectations for the ProxmoxMCP
 ## SOLID Principles in Testing
 
 ### Single Responsibility Principle (SRP)
+
 **"Each test should have one reason to change"**
 
 ✅ **DO:**
+
 - Test exactly one behavior per test method
 - Create focused test classes for specific VM operations
 - Use single-purpose test utilities and helpers
 
 ❌ **DON'T:**
+
 - Test multiple VM operations in one test method
 - Mix setup, testing, and validation concerns
 - Create monolithic test classes that test everything
 
 **Example:**
+
 ```python
 # ✅ GOOD - Single responsibility
 def test_start_vm_success(self):
     """Test that start_vm successfully starts a stopped VM."""
-    
+
 def test_start_vm_already_running_raises_error(self):
     """Test that start_vm raises error when VM is already running."""
 
@@ -32,50 +36,58 @@ def test_vm_lifecycle_operations(self):
 ```
 
 ### Open/Closed Principle (OCP)
+
 **"Tests should be open for extension, closed for modification"**
 
 ✅ **DO:**
+
 - Create base test classes that can be extended
 - Use configurable test fixtures
 - Design test helpers that accept parameters for different scenarios
 
 ❌ **DON'T:**
+
 - Modify existing tests when adding new features
 - Hardcode test data that prevents extension
 - Create tightly coupled test dependencies
 
 **Example:**
+
 ```python
 # ✅ GOOD - Extensible base class
 class BaseVMOperationTest:
     def setup_vm_mock(self, status="stopped", **kwargs):
         # Configurable setup that can be extended
-        
+
 class TestStartVM(BaseVMOperationTest):
     def test_start_stopped_vm(self):
         vm_mock = self.setup_vm_mock(status="stopped")
 ```
 
 ### Liskov Substitution Principle (LSP)
+
 **"Mocks should be substitutable for real objects"**
 
 ✅ **DO:**
+
 - Ensure mocks implement the same interface as real objects
 - Use consistent return types and structures
 - Maintain behavioral contracts in test doubles
 
 ❌ **DON'T:**
+
 - Create mocks that behave differently than real implementations
 - Use simplified mocks that break interface contracts
 - Return mock data that doesn't match real API responses
 
 **Example:**
+
 ```python
 # ✅ GOOD - Mock maintains real API contract
 def mock_proxmox_api_response(self):
     return {
         "success": True,
-        "message": "VM 100 started successfully", 
+        "message": "VM 100 started successfully",
         "upid": "UPID:node1:000123:456789:timestamp:qmstart:100:user"
     }
 
@@ -85,19 +97,23 @@ def mock_proxmox_api_response(self):
 ```
 
 ### Interface Segregation Principle (ISP)
+
 **"Tests should only depend on methods they use"**
 
 ✅ **DO:**
+
 - Create minimal, focused mock configurations
 - Use specific test fixtures for each test scenario
 - Mock only the methods/attributes actually used in the test
 
 ❌ **DON'T:**
+
 - Create large, monolithic test fixtures
 - Mock entire objects when only specific methods are needed
 - Force tests to depend on unused mock setup
 
 **Example:**
+
 ```python
 # ✅ GOOD - Minimal mock for specific test
 def test_start_vm_success(self):
@@ -111,19 +127,23 @@ def test_start_vm_success(self):
 ```
 
 ### Dependency Inversion Principle (DIP)
+
 **"Tests should depend on abstractions, not concretions"**
 
 ✅ **DO:**
+
 - Mock at the interface/abstraction level
 - Use dependency injection for test configurations
 - Abstract test data creation through factories
 
 ❌ **DON'T:**
+
 - Mock low-level implementation details
 - Hardcode dependencies in test setup
 - Couple tests to specific implementation classes
 
 **Example:**
+
 ```python
 # ✅ GOOD - Mock at interface level
 class TestVMTools:
@@ -142,21 +162,23 @@ class TestVMTools:
 ## Clean Code Principles for Tests
 
 ### Test Structure (Arrange-Act-Assert)
+
 ```python
 def test_vm_operation(self):
     # Arrange - Set up test data and mocks
     mock_proxmox = self.create_mock_proxmox()
     vm_tools = VMTools(mock_proxmox)
-    
+
     # Act - Execute the operation being tested
     result = vm_tools.start_vm("node1", "100")
-    
+
     # Assert - Verify the expected outcome
     self.assertEqual(result[0].text, expected_json)
     mock_proxmox.nodes().qemu().status.start.post.assert_called_once()
 ```
 
 ### Test Naming Convention
+
 - Use descriptive names that explain the scenario and expected outcome
 - Format: `test_[method]_[scenario]_[expected_result]`
 - Examples:
@@ -167,18 +189,21 @@ def test_vm_operation(self):
 ### Test Categories
 
 #### 1. Unit Tests (Atomic & Idempotent)
+
 - Test individual methods in isolation
 - Use mocks for all external dependencies
 - Focus on business logic and edge cases
 - Should run fast (< 100ms per test)
 
 #### 2. Integration Tests (Minimal)
+
 - Test interaction between components
 - Use real objects where possible, mock external systems
 - Focus on critical workflows
 - Acceptable to run slower (< 5s per test)
 
 #### 3. Error Handling Tests
+
 - Test all error conditions and exceptions
 - Verify proper error messages and types
 - Test edge cases and boundary conditions
@@ -186,13 +211,14 @@ def test_vm_operation(self):
 ### Test Data Management
 
 #### Factory Pattern for Test Data
+
 ```python
 class VMTestDataFactory:
     @staticmethod
     def create_vm_config(vmid="100", name="test-vm", status="stopped", **overrides):
         config = {
             "vmid": vmid,
-            "name": name, 
+            "name": name,
             "status": status,
             "memory": 512,
             "cores": 1
@@ -202,6 +228,7 @@ class VMTestDataFactory:
 ```
 
 #### Test Isolation
+
 - Each test must be independent
 - No shared state between tests
 - Use `setUp()` and `tearDown()` for consistent test environment
@@ -210,27 +237,29 @@ class VMTestDataFactory:
 ### Mock Guidelines
 
 #### Mock Strategy
+
 1. **Mock at the API boundary** - Mock ProxmoxAPI interface, not HTTP clients
 2. **Use `spec` parameter** - Ensures mocks match real interface
 3. **Verify interactions** - Use `assert_called_with()` to verify correct API calls
 4. **Return realistic data** - Mock responses should match real API responses
 
 #### Mock Example
+
 ```python
 def setUp(self):
     self.mock_proxmox = Mock(spec=ProxmoxAPI)
     self.vm_tools = VMTools(self.mock_proxmox)
-    
+
 def test_start_vm_success(self):
     # Setup mock behavior
     self.mock_proxmox.nodes().qemu().status.current.get.return_value = {
         "status": "stopped"
     }
     self.mock_proxmox.nodes().qemu().status.start.post.return_value = "UPID:task123"
-    
+
     # Test execution
     result = self.vm_tools.start_vm("node1", "100")
-    
+
     # Verify behavior
     self.mock_proxmox.nodes.assert_called_with("node1")
     self.mock_proxmox.nodes().qemu.assert_called_with("100")
@@ -239,16 +268,19 @@ def test_start_vm_success(self):
 ## Code Quality Standards
 
 ### Complexity Metrics
+
 - **Cyclomatic Complexity**: ≤ 3 per test method
 - **Test Method Length**: ≤ 20 lines
 - **Setup Method Length**: ≤ 30 lines
 
 ### Coverage Requirements
+
 - **Unit Test Coverage**: ≥ 95% for VM lifecycle operations
 - **Error Path Coverage**: ≥ 90% for exception handling
 - **Integration Coverage**: ≥ 80% for critical workflows
 
 ### Performance Standards
+
 - **Unit Tests**: < 100ms per test
 - **Integration Tests**: < 5s per test
 - **Full Test Suite**: < 30s total runtime
@@ -256,6 +288,7 @@ def test_start_vm_success(self):
 ## Existing Project Structure Analysis
 
 ### Current Test Organization
+
 ```
 tests/
 ├── __init__.py              # Test suite initialization
@@ -264,6 +297,7 @@ tests/
 ```
 
 ### Pytest Configuration (pyproject.toml)
+
 ```toml
 [tool.pytest.ini_options]
 asyncio_mode = "strict"       # Enforces strict asyncio testing
@@ -275,6 +309,7 @@ addopts = "-v"               # Verbose output by default
 ### Current Testing Patterns Observed
 
 #### ✅ **Good Patterns in Existing Tests**
+
 1. **Fixture-based setup** - Uses `@pytest.fixture` for reusable test setup
 2. **Mock isolation** - Properly mocks external dependencies (ProxmoxAPI)
 3. **Async testing** - Uses `@pytest.mark.asyncio` for async operations
@@ -283,6 +318,7 @@ addopts = "-v"               # Verbose output by default
 6. **API call verification** - Uses `assert_called_with()` to verify mock interactions
 
 #### ⚠️ **Areas for Improvement**
+
 1. **Mixed responsibilities** - Some tests verify multiple behaviors
 2. **No test data factories** - Test data is inline in test methods
 3. **Limited test organization** - All server tests in one large file
@@ -291,6 +327,7 @@ addopts = "-v"               # Verbose output by default
 ### Existing Pattern Examples to Follow
 
 #### ✅ **Fixture Pattern** (from test_server.py)
+
 ```python
 @pytest.fixture
 def mock_proxmox():
@@ -301,25 +338,27 @@ def mock_proxmox():
         ]
         yield mock
 
-@pytest.fixture  
+@pytest.fixture
 def server(mock_env_vars, mock_proxmox):
     """Fixture to create a ProxmoxMCPServer instance."""
     return ProxmoxMCPServer()
 ```
 
 #### ✅ **Async Test Pattern** (from test_server.py)
+
 ```python
 @pytest.mark.asyncio
 async def test_get_nodes(server, mock_proxmox):
     """Test get_nodes tool."""
     response = await server.mcp.call_tool("get_nodes", {})
     result = json.loads(response[0].text)
-    
+
     assert len(result) == 2
     assert result[0]["node"] == "node1"
 ```
 
 #### ✅ **Error Testing Pattern** (from test_server.py)
+
 ```python
 @pytest.mark.asyncio
 async def test_get_node_status_missing_parameter(server):
@@ -329,20 +368,22 @@ async def test_get_node_status_missing_parameter(server):
 ```
 
 #### ✅ **Mock Verification Pattern** (from test_vm_console.py)
+
 ```python
 @pytest.mark.asyncio
 async def test_execute_command_success(vm_console, mock_proxmox):
     """Test successful command execution."""
     result = await vm_console.execute_command("node1", "100", "ls -l")
-    
+
     # Verify behavior
     assert result["success"] is True
-    
+
     # Verify API calls
     mock_proxmox.nodes.return_value.qemu.assert_called_with("100")
 ```
 
 #### ⚠️ **Import Pattern Issue to Fix**
+
 ```python
 # ❌ BROKEN - Current import in test_vm_console.py
 from proxmox_mcp.tools.vm_console import VMConsoleManager
@@ -380,11 +421,13 @@ tests/
 ## Enforcement
 
 ### Pre-commit Hooks
+
 - Run test suite on commit
 - Enforce code coverage thresholds
 - Validate test naming conventions
 
 ### Code Review Checklist
+
 - [ ] Tests follow SRP (one behavior per test)
 - [ ] Mocks implement proper interfaces (LSP)
 - [ ] Test setup is minimal and focused (ISP)
@@ -396,16 +439,17 @@ tests/
 ## Examples of Good vs Bad Tests
 
 ### ✅ Good Test Example
+
 ```python
 class TestStartVM(BaseVMTest):
     def test_start_vm_with_stopped_vm_returns_success_response(self):
         # Arrange
         self.setup_vm_mock(status="stopped")
         self.mock_proxmox.nodes().qemu().status.start.post.return_value = "UPID:123"
-        
+
         # Act
         result = self.vm_tools.start_vm("node1", "100")
-        
+
         # Assert
         response_data = json.loads(result[0].text)
         self.assertTrue(response_data["success"])
@@ -414,13 +458,14 @@ class TestStartVM(BaseVMTest):
 ```
 
 ### ❌ Bad Test Example
+
 ```python
 def test_vm_operations(self):
     # Multiple responsibilities, not atomic, hard to debug
     vm_tools = VMTools(real_proxmox_connection)  # Not mocked
     vm_tools.create_vm("node1", "100", "test")   # Side effects
     vm_tools.start_vm("node1", "100")
-    vm_tools.stop_vm("node1", "100") 
+    vm_tools.stop_vm("node1", "100")
     vm_tools.delete_vm("node1", "100")
     # No specific assertions, tests everything at once
 ```
@@ -435,12 +480,13 @@ Based on successful implementation across VM lifecycle tests, the following patt
 
 **Problem**: Test classes missing methods from required base classes.
 
-**Solution**: 
+**Solution**:
+
 ```python
 # ❌ BEFORE - Missing error test methods
 class TestVMErrors(BaseVMStartStopTest):
 
-# ✅ AFTER - Multiple inheritance for comprehensive functionality  
+# ✅ AFTER - Multiple inheritance for comprehensive functionality
 class TestVMErrors(BaseVMErrorTest):
 class TestVMStatusChecks(BaseVMStartStopTest, BaseVMErrorTest):
 ```
@@ -450,6 +496,7 @@ class TestVMStatusChecks(BaseVMStartStopTest, BaseVMErrorTest):
 **Problem**: Tests expect different exception types than implementation contract.
 
 **Solution**: Align tests with documented implementation behavior.
+
 ```python
 # Check implementation docstring:
 # "Raises: ValueError: If VM is not found or already running"
@@ -463,6 +510,7 @@ with self.assert_value_error_raised("not found"):  # Not RuntimeError
 **Problem**: Implementation has technical error messages, tests expect user-friendly ones.
 
 **Solution**: Update implementation to match better test language.
+
 ```python
 # ❌ BEFORE - Technical message
 raise ValueError(f"VM {vmid} is still running - stop it first")
@@ -476,11 +524,12 @@ raise ValueError(f"VM {vmid} must be stopped before deletion")
 **Problem**: Tests expect unrealistic edge case behavior (e.g., None UPID).
 
 **Solution**: Update tests to expect realistic API behavior.
+
 ```python
 # ❌ BEFORE - Unrealistic expectation
 assert response_data["upid"] is None
 
-# ✅ AFTER - Realistic expectation  
+# ✅ AFTER - Realistic expectation
 assert response_data["upid"] is not None
 assert isinstance(response_data["upid"], str)
 ```
@@ -490,6 +539,7 @@ assert isinstance(response_data["upid"], str)
 **Problem**: Complex mock scenarios fail and require significant infrastructure.
 
 **Solution**: Archive with clear documentation for future implementation.
+
 ```python
 # TODO: Advanced error scenario tests - currently archived due to mock configuration complexity
 # These tests require enhanced mock builder support for specific Proxmox API error scenarios
@@ -505,10 +555,11 @@ assert isinstance(response_data["upid"], str)
 This pattern has been successfully applied to:
 
 - ✅ `test_start_vm.py`: 13/20 → 17/17 (100%)
-- ✅ `test_stop_vm.py`: 15/22 → 19/19 (100%)  
+- ✅ `test_stop_vm.py`: 15/22 → 19/19 (100%)
 - ✅ `test_delete_vm.py`: 16/25 → 21/21 (100%)
 
 **Key Benefits**:
+
 - 🎯 Maintains functionality while achieving clean test suites
 - 📝 Improves error messages based on test expectations
 - 🔧 Documents complex scenarios for future implementation
@@ -516,4 +567,4 @@ This pattern has been successfully applied to:
 
 ---
 
-*Following these guidelines ensures our tests are maintainable, reliable, and support long-term code evolution.*
+_Following these guidelines ensures our tests are maintainable, reliable, and support long-term code evolution._

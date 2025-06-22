@@ -22,21 +22,19 @@ A Python-based Model Context Protocol (MCP) server for interacting with Proxmox 
 - ✅ Type-safe implementation with Pydantic
 - 🎨 Rich output formatting with customizable themes
 
-
-
 https://github.com/user-attachments/assets/1b5f42f7-85d5-4918-aca4-d38413b0e82b
-
-
 
 ## 📦 Installation
 
 ### Prerequisites
+
 - UV package manager (recommended)
 - Python 3.10 or higher
 - Git
 - Access to a Proxmox server with API token credentials
 
 Before starting, ensure you have:
+
 - [ ] Proxmox server hostname or IP
 - [ ] Proxmox API token (see [API Token Setup](#proxmox-api-token-setup))
 - [ ] UV installed (`pip install uv`)
@@ -44,12 +42,13 @@ Before starting, ensure you have:
 ### Option 1: Quick Install (Recommended)
 
 1. Clone and set up environment:
+
    ```bash
    # Clone repository
    cd ~/Documents/Cline/MCP  # For Cline users
    # OR
    cd your/preferred/directory  # For manual installation
-   
+
    git clone https://github.com/canvrno/ProxmoxMCP.git
    cd ProxmoxMCP
 
@@ -61,12 +60,14 @@ Before starting, ensure you have:
    ```
 
 2. Install dependencies:
+
    ```bash
    # Install with development dependencies
    uv pip install -e ".[dev]"
    ```
 
 3. Create configuration:
+
    ```bash
    # Create config directory and copy template
    mkdir -p proxmox-config
@@ -98,16 +99,19 @@ Before starting, ensure you have:
 ### Verifying Installation
 
 1. Check Python environment:
+
    ```bash
    python -c "import proxmox_mcp; print('Installation OK')"
    ```
 
 2. Run the tests:
+
    ```bash
    pytest
    ```
 
 3. Verify configuration:
+
    ```bash
    # Linux/macOS
    PROXMOX_MCP_CONFIG="proxmox-config/config.json" python -m proxmox_mcp.server
@@ -117,12 +121,14 @@ Before starting, ensure you have:
    ```
 
    You should see either:
+
    - A successful connection to your Proxmox server
    - Or a connection error (if Proxmox details are incorrect)
 
 ## ⚙️ Configuration
 
 ### Proxmox API Token Setup
+
 1. Log into your Proxmox web interface
 2. Navigate to Datacenter -> Permissions -> API Tokens
 3. Create a new API token:
@@ -131,11 +137,12 @@ Before starting, ensure you have:
    - Uncheck "Privilege Separation" if you want full access
    - Save and copy both the token ID and secret
 
-
 ## 🚀 Running the Server
 
 ### Development Mode
+
 For testing and development:
+
 ```bash
 # Activate virtual environment first
 source .venv/bin/activate  # Linux/macOS
@@ -152,31 +159,32 @@ For Cline users, add this configuration to your MCP settings file (typically at 
 
 ```json
 {
-    "mcpServers": {
-        "github.com/canvrno/ProxmoxMCP": {
-            "command": "/absolute/path/to/ProxmoxMCP/.venv/bin/python",
-            "args": ["-m", "proxmox_mcp.server"],
-            "cwd": "/absolute/path/to/ProxmoxMCP",
-            "env": {
-                "PYTHONPATH": "/absolute/path/to/ProxmoxMCP/src",
-                "PROXMOX_MCP_CONFIG": "/absolute/path/to/ProxmoxMCP/proxmox-config/config.json",
-                "PROXMOX_HOST": "your-proxmox-host",
-                "PROXMOX_USER": "username@pve",
-                "PROXMOX_TOKEN_NAME": "token-name",
-                "PROXMOX_TOKEN_VALUE": "token-value",
-                "PROXMOX_PORT": "8006",
-                "PROXMOX_VERIFY_SSL": "false",
-                "PROXMOX_SERVICE": "PVE",
-                "LOG_LEVEL": "DEBUG"
-            },
-            "disabled": false,
-            "autoApprove": []
-        }
+  "mcpServers": {
+    "github.com/canvrno/ProxmoxMCP": {
+      "command": "/absolute/path/to/ProxmoxMCP/.venv/bin/python",
+      "args": ["-m", "proxmox_mcp.server"],
+      "cwd": "/absolute/path/to/ProxmoxMCP",
+      "env": {
+        "PYTHONPATH": "/absolute/path/to/ProxmoxMCP/src",
+        "PROXMOX_MCP_CONFIG": "/absolute/path/to/ProxmoxMCP/proxmox-config/config.json",
+        "PROXMOX_HOST": "your-proxmox-host",
+        "PROXMOX_USER": "username@pve",
+        "PROXMOX_TOKEN_NAME": "token-name",
+        "PROXMOX_TOKEN_VALUE": "token-value",
+        "PROXMOX_PORT": "8006",
+        "PROXMOX_VERIFY_SSL": "false",
+        "PROXMOX_SERVICE": "PVE",
+        "LOG_LEVEL": "DEBUG"
+      },
+      "disabled": false,
+      "autoApprove": []
     }
+  }
 }
 ```
 
 To help generate the correct paths, you can use this command:
+
 ```bash
 # This will print the MCP settings with your absolute paths filled in
 python -c "import os; print(f'''{{
@@ -196,6 +204,7 @@ python -c "import os; print(f'''{{
 ```
 
 Important:
+
 - All paths must be absolute
 - The Python interpreter must be from your virtual environment
 - The PYTHONPATH must point to the src directory
@@ -206,10 +215,12 @@ Important:
 The server provides the following MCP tools for interacting with Proxmox:
 
 ### get_nodes
+
 Lists all nodes in the Proxmox cluster.
 
 - Parameters: None
 - Example Response:
+
   ```
   🖥️ Proxmox Nodes
 
@@ -227,6 +238,7 @@ Lists all nodes in the Proxmox cluster.
   ```
 
 ### get_node_status
+
 Get detailed status of a specific node.
 
 - Parameters:
@@ -244,10 +256,12 @@ Get detailed status of a specific node.
   ```
 
 ### get_vms
+
 List all VMs across the cluster.
 
 - Parameters: None
 - Example Response:
+
   ```
   🗃️ Virtual Machines
 
@@ -265,10 +279,12 @@ List all VMs across the cluster.
   ```
 
 ### get_storage
+
 List available storage.
 
 - Parameters: None
 - Example Response:
+
   ```
   💾 Storage Pools
 
@@ -286,10 +302,12 @@ List available storage.
   ```
 
 ### get_cluster_status
+
 Get overall cluster status.
 
 - Parameters: None
 - Example Response:
+
   ```
   ⚙️ Proxmox Cluster
 
@@ -311,6 +329,7 @@ Get overall cluster status.
   ```
 
 ### execute_vm_command
+
 Execute a command in a VM's console using QEMU Guest Agent.
 
 - Parameters:
@@ -318,6 +337,7 @@ Execute a command in a VM's console using QEMU Guest Agent.
   - `vmid` (string, required): ID of the VM
   - `command` (string, required): Command to execute
 - Example Response:
+
   ```
   🔧 Console Command Result
     • Status: SUCCESS
@@ -330,6 +350,7 @@ Execute a command in a VM's console using QEMU Guest Agent.
      Loaded: loaded (/lib/systemd/system/nginx.service; enabled; vendor preset: enabled)
      Active: active (running) since Tue 2025-02-18 15:23:45 UTC; 2 months 3 days ago
   ```
+
 - Requirements:
   - VM must be running
   - QEMU Guest Agent must be installed and running in the VM
@@ -368,6 +389,10 @@ proxmox-mcp/
 ├── pyproject.toml            # Project metadata and dependencies
 └── LICENSE                   # MIT License
 ```
+
+## Credits
+
+Forked from [canvrno/ProxmoxMCP](https://github.com/canvrno/ProxmoxMCP)
 
 ## 📄 License
 
